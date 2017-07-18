@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	log "github.com/Sirupsen/logrus"
-	statsd "gopkg.in/alexcesaro/statsd.v2"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/alexcesaro/statsd.v2"
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
@@ -95,7 +96,7 @@ func main() {
 		collectMetrics(cfg, rep)
 	} else {
 		ticker := time.NewTicker(cfg.CheckInterval)
-		for _ = range ticker.C {
+		for range ticker.C {
 			collectMetrics(cfg, rep)
 		}
 	}

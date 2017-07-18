@@ -4,16 +4,16 @@ import (
 	"encoding/csv" // for QPS report parsing
 	"errors"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"github.com/nesv/go-dynect/dynect"
-	statsd "gopkg.in/alexcesaro/statsd.v2"
 	"io"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
-	//"net/http"
-	"net/url"
 	"time"
+
+	"github.com/nesv/go-dynect/dynect"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/alexcesaro/statsd.v2"
 )
 
 type DynConfig struct {
@@ -62,7 +62,9 @@ func (p DynProvider) CollectMetrics(rep *statsd.Client) (err error) {
 		// A zone returned by API actually looks like /REST/Zone/example.com/
 		zone = strings.Replace(zone, "/REST/Zone/", "", 1)
 		zone = strings.TrimRight(zone, "/")
-		taggedRep := rep.Clone(statsd.Tags("zone", zone, "provider", "dyn"))
+		customZone := strings.Replace(zone, ".", "_", -1)
+		//taggedRep := rep.Clone(statsd.Tags("zone", zone, "provider", "dyn"))
+		taggedRep := rep.Clone()
 
 		log.Debug("Dyn provider is processing zone ", zone)
 		var z *dynect.ZoneResponse
@@ -70,17 +72,17 @@ func (p DynProvider) CollectMetrics(rep *statsd.Client) (err error) {
 		if err != nil {
 			log.Info("Error fetching zone ", zone, ": ", err)
 		}
-		p.reportZoneState(&z.Data, taggedRep)
+		p.reportCustomZoneState(&z.Data, taggedRep, customZone)
 
 		var records *dynect.AllRecordsResponse
 		records, err = p.getZoneRecords(zone)
 		if err != nil {
 			log.Info("Error fetching list of records for zone ", zone, ": ", err)
 		}
-		p.reportRecordsMetrics(records, zone, taggedRep)
+		p.reportCustomRecordsMetrics(records, customZone, taggedRep)
 
 		if qps, exists := qpsForZone[zone]; exists {
-			taggedRep.Gauge("zone.qps", qps)
+			taggedRep.Gauge("zone.qps."+customZone, qps)
 		} else {
 			log.Debug("No Dyn QPS data for zone ", zone)
 		}
@@ -119,8 +121,18 @@ func (p DynProvider) reportZoneState(z *dynect.ZoneDataBlock, rep *statsd.Client
 	rep.Gauge("zone.serial", z.Serial)
 }
 
+func (p DynProvider) reportCustomZoneState(z *dynect.ZoneDataBlock, rep *statsd.Client, zone string) {
+	rep.Gauge("zone.type.primary."+zone, BoolToInt(z.ZoneType == "Primary"))
+	rep.Gauge("zone.type.secondary."+zone, BoolToInt(z.ZoneType == "Secondary"))
+	rep.Gauge("zone.serial."+zone, z.Serial)
+}
+
 func (p DynProvider) reportRecordsMetrics(records *dynect.AllRecordsResponse, zone string, rep *statsd.Client) {
 	rep.Gauge("zone.record_count", len(records.Data))
+}
+
+func (p DynProvider) reportCustomRecordsMetrics(records *dynect.AllRecordsResponse, zone string, rep *statsd.Client) {
+	rep.Gauge("zone.record_count."+zone, len(records.Data))
 }
 
 func (p DynProvider) getQpsReport() (qpsForZone map[string]float64, err error) {

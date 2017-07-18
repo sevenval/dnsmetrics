@@ -3,9 +3,10 @@ package main
 import (
 	"bufio"
 	"bytes"
-	log "github.com/Sirupsen/logrus"
-	statsd "gopkg.in/alexcesaro/statsd.v2"
 	"net"
+
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/alexcesaro/statsd.v2"
 )
 
 func CreateStatsdReporter(cfg *Config, once bool) (rep *statsd.Client, err error) {
