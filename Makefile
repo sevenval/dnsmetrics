@@ -18,7 +18,6 @@ $(APP): $(SOURCES) .get
 .PHONY: clean container install
 .get:
 	go get ./...
-	@touch .get
 
 clean:
 	go clean ./...
