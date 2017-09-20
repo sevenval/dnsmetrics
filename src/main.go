@@ -83,7 +83,7 @@ func main() {
 	if *debug {
 		log.SetLevel(log.DebugLevel)
 	} else {
-		log.SetLevel(log.InfoLevel)
+		log.SetLevel(log.WarnLevel)
 	}
 
 	cfg := loadConfig(configFileName)
