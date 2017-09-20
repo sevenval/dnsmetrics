@@ -4,5 +4,6 @@ FROM bitnami/minideb:jessie
 
 RUN install_packages ca-certificates
 COPY dnsmetrics /usr/bin/dnsmetrics
+COPY config.yml /local/config.yml
 
 CMD ["/usr/bin/dnsmetrics", "-config", "/local/config.yml"]
