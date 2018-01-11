@@ -74,12 +74,20 @@ func (p DynProvider) CollectMetrics(rep *statsd.Client) (err error) {
 		}
 		p.reportCustomZoneState(&z.Data, taggedRep, customZone)
 
-		var records *dynect.AllRecordsResponse
-		records, err = p.getZoneRecords(zone)
-		if err != nil {
-			log.Info("Error fetching list of records for zone ", zone, ": ", err)
-		}
-		p.reportCustomRecordsMetrics(records, customZone, taggedRep)
+    if z.Data.ZoneType == "Primary" {
+      records, err := p.getZoneRecords(zone)
+      if err != nil {
+        log.Info("Error fetching list of records for zone ", zone, ": ", err)
+      }
+      p.reportCustomRecordsMetrics(records, customZone, taggedRep)
+      log.Debugf("Type Primary %v\n", zone)
+    } else {
+      empty := &dynect.AllRecordsResponse{
+        Data: []string{},
+      }
+      p.reportCustomRecordsMetrics(empty, customZone, taggedRep)
+      log.Debugf("Type Secondary %v\n", zone)
+    }
 
 		if qps, exists := qpsForZone[zone]; exists {
 			taggedRep.Gauge("zone.qps."+customZone, qps)
